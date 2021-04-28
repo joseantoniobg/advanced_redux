@@ -6,40 +6,32 @@ import Notification from './components/UI/Notification'
 import { useSelector, useDispatch } from 'react-redux';
 import { useEffect } from 'react';
 
-import { uiActions } from './store/ui-slice';
+import { cartActions, fetchCartData, sendCartData } from './store/cart-slice';
 import { Fragment } from 'react';
 
 function App() {
 
   const showCart = useSelector(state => state.ui.cartVisible);
   const { status, title, message } = useSelector(state => state.ui.notification);
+  const changed =  useSelector(state => state.cart.changed)
 
   const cart = useSelector(state => state.cart)
 
   const dispatch = useDispatch();
 
   useEffect(() => {
+    dispatch(fetchCartData());
+  }, [dispatch])
 
-    if (cart.totalQuantity > 0) {
-      const fetchCartData = async () => {
-      try {
-        dispatch(uiActions.showNotification({ status: 'pending', title: 'Sending Request', message: 'Your cart is being saved...' }))
-        const response = await fetch('https://http-react-default-dddd.firebaseio.com/cart.json', { method: 'PUT', body: JSON.stringify(cart) })
-
-        if (!response.ok) {
-          throw new Error('Something went wrong!');
-        }
-
-          dispatch(uiActions.showNotification({ status: 'success', title: 'Cart Saved', message: 'Your cart was saved!' }))
-
-        } catch (error) {
-          dispatch(uiActions.showNotification({ status: 'error', title: 'Error while saving', message: error.message }))
-        }
-      }
-
-      fetchCartData();
+  useEffect(() => {
+    if (cart.items.length === 0) {
+      return;
     }
-  }, [cart, dispatch])
+    if (changed) {
+       dispatch(sendCartData(cart));
+       dispatch(cartActions.setChangedToFalse());
+    }
+  }, [cart, dispatch, changed])
 
   return (
     <Fragment>
